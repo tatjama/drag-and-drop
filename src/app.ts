@@ -1,36 +1,73 @@
-// Code goes here!
-window.onload = () => startProject(); 
+//START PROJECT STATE MANAGEMENT CLASS:
+class ProjectState{
+    private projects: any[];
+    private static  instance: ProjectState;
 
-let arrOfProject: Project[] = [];
-
-
-const startProject = () => {
-    showForm();
-//    showProjectTemplate();
-}
-
-const submitFom = (e:Event) => {
-    e.preventDefault();
-    const titleEl = document.getElementById('title') as HTMLInputElement;
-    const descriptionEl = document.getElementById('description') as HTMLInputElement;
-    const peopleEl = document.getElementById('people') as HTMLInputElement;
-
-    const title: string = titleEl.value;
-    const description: string = descriptionEl.value;
-    const people: number = +peopleEl.value;
-
-    const createProject = new Project(title, description, people);
-
-    if(!validate(createProject)){
-        alert('Invalid input! Please try again...');
-        return;
+    constructor(){
+        this.projects = [];
     }
 
-    clearForm(titleEl, descriptionEl, peopleEl);
-   // showProject(createProject);
-    showListOfProject(createProject);     
-}
+    static getInstance(){
+        if(this.instance){
+            return this.instance;
+        }
+        this.instance = new ProjectState();
+        return this.instance
+    }
 
+    addProject(project: Project){        
+        this.projects.push(project);
+        console.log(this.projects);
+        new ProjectList( 'active', this.projects)
+    }
+}
+//Insure to have Single instance of project state
+const projectState = ProjectState.getInstance();
+
+//END PROJECT STATE MANAGEMENT CLASS
+//START SHOW LIST OF PROJECTS CLASS
+
+class ProjectList{
+    type: string;
+    templateElement: HTMLTemplateElement;
+    element: HTMLElement;
+    targetParent: HTMLElement;
+    targetElement: HTMLUListElement;
+
+    constructor(type: string, projects: Project[]){
+        this.type = type;
+        this.templateElement = document.getElementById('single-project') as HTMLTemplateElement;
+        const templateElementClone: DocumentFragment = document.importNode(this.templateElement.content, true);
+        this.element = templateElementClone.firstElementChild as HTMLElement;
+        this.targetParent = document.getElementById( this.type + '-projects') as HTMLElement;
+        this.targetElement = this.targetParent.querySelector('ul') as HTMLUListElement;
+        
+        this.showListOfProjects(projects);
+        this.attach();
+    }
+
+    showListOfProjects(projects:Project[]){
+        projects.map(project => this.showSingleProject(project))        
+    }
+
+    showSingleProject(project: Project){
+        this.element.id = project.id;
+        this.element.innerHTML = `
+        <h2>Project title: ${project.title}</h2>
+        <h3>Number of people: ${project.people}</h3>
+        <p>Description: ${project.description}</p>
+    `
+    }
+
+    private attach(){
+        this.targetElement.insertAdjacentElement('beforeend', this.element);
+    }
+}
+//END SHOW LIST OF PROJECTS CLASS
+
+
+
+//START PROJECT CLASS
 interface ValidatorConfig{
     [property: string]: {
         [validatableProperty: string]: string[];
@@ -46,10 +83,16 @@ const Require = (target: any, propName: string) => {
     }   
 }
 
-const Positive = (target: any, propName: string) => {
+const AllowedRange = (target: any, propName: string) => {
     registeredValidators[target.constructor.name] ={
         ...registeredValidators[target.constructor.name],
-        [propName]: [ ...(registeredValidators[target.constructor.name]?.[propName]??[]), 'positive']
+        [propName]: [ ...(registeredValidators[target.constructor.name]?.[propName]??[]), 'allowed-range']
+    }    
+}
+const AllowedLength = (target: any, propName: string) => {
+    registeredValidators[target.constructor.name] ={
+        ...registeredValidators[target.constructor.name],
+        [propName]: [ ...(registeredValidators[target.constructor.name]?.[propName]??[]), 'allowed-length']
     }    
 }
 
@@ -61,25 +104,30 @@ const validate = (obj:any) => {
         for(const validator of objectValidationConfig[prop]){            
             switch(validator){
                 case 'required':
-                    isValid = isValid && !!obj[prop];
+                    isValid = isValid && obj[prop].trim().length > 0;
                     break;
-                case 'positive':
-                    isValid = isValid && obj[prop] >= 0;
+                case 'allowed-range':
+                    isValid = isValid && obj[prop] > 0 && obj[prop] <6;
                     break;
+                case 'allowed-length':
+                    isValid = isValid && obj[prop].trim().length > 4 && obj[prop].trim().length < 11
             }
         }
     } 
     return isValid;
 }
 class Project{
+    id: string;
     @Require
     title: string;
     @Require
+    @AllowedLength
     description: string;
-    @Positive
+    @AllowedRange
     people: number;    
 
-    constructor(t: string, d: string, p: number){
+    constructor( t: string, d: string, p: number){
+        this.id = Math.random().toString();
         this.title = t;
         this.description = d;
         this.people = p;
@@ -87,44 +135,110 @@ class Project{
 
 }
 
-const showForm = () => {
-    const projectInputElement = document.getElementById("project-input")! as HTMLTemplateElement;
-    const projectInputClone: Node = projectInputElement.content.cloneNode(true);
-    const appElement: Element = document.querySelector('.app')!;
-    appElement.appendChild(projectInputClone);
+//END PROJECT CLASS
 
-    const form: HTMLFormElement = document.querySelector('form')!;
-    form.addEventListener('submit',submitFom);
+
+//START PROJECT-INPUT CLASS
+function Autobind(_: any, _2: string | Symbol, descriptor: PropertyDescriptor){
+    const originalMethod = descriptor.value;
+    const adjustedMethod: PropertyDescriptor = {
+        configurable: true,
+        enumerable: false,
+        get(){
+            return originalMethod.bind(this)
+        }
+    };
+    return adjustedMethod;
+}
+class ProjectInput{
+    templateElement: HTMLTemplateElement;
+    targetElement: HTMLDivElement;
+    element: HTMLFormElement;
+    titleEl: HTMLInputElement;
+    descriptionEl: HTMLInputElement;
+    peopleEl: HTMLInputElement; 
+
+
+    constructor(){
+        this.templateElement = document.getElementById("project-input") as HTMLTemplateElement;
+        this.targetElement = document.querySelector('.app') as HTMLDivElement;
+        const templateElementClone: DocumentFragment = document.importNode(this.templateElement.content, true) ;
+        this.element = templateElementClone.firstElementChild as HTMLFormElement;
+        this.element.id = 'user-input';        
+        this.titleEl = this.element.querySelector('#title') as HTMLInputElement;
+        this.descriptionEl = this.element.querySelector('#description') as HTMLInputElement;
+        this.peopleEl = this.element.querySelector('#people') as HTMLInputElement;
+        this.configure();
+        this.attach();
+    }
+
+    private attach(){
+        this.targetElement.insertAdjacentElement('afterbegin', this.element); 
+    }
+
+    
+    private configure(){
+        this.element.addEventListener('submit',this.submit);
+    }
+
+    @Autobind
+    private submit(e:Event){
+        e.preventDefault();
+        const title: string = this.titleEl.value;
+        const description: string = this.descriptionEl.value;
+        const people: number = +this.peopleEl.value;
+
+        const createProject = new Project(title, description, people);
+
+        if(!validate(createProject)){
+            alert('Invalid input! Please try again...');
+            return;
+        }
+        projectState.addProject(createProject);
+        this.clearForm(this.titleEl, this.descriptionEl, this.peopleEl);
+    }
+
+    private clearForm(titleEl: HTMLInputElement, descriptionEl: HTMLInputElement, peopleEl: HTMLInputElement){
+        titleEl.value = '';
+        descriptionEl.value = '';
+        peopleEl.value ='';
+    }
+}
+//START PROJECT-INPUT CLASS
+
+//START PROJECT-TEMPLATE CLASS
+class ProjectTemplate{
+    type: string;
+    templateElement: HTMLTemplateElement;
+    targetElement: HTMLDivElement;
+    element: HTMLOptionElement;
+    headerElement: HTMLElement;   
+
+    constructor(type: string){
+        this.type = type;
+        this.templateElement = document.getElementById("project-list") as HTMLTemplateElement;
+        this.targetElement = document.querySelector('.app') as HTMLDivElement;        
+        const templateElementClone: DocumentFragment = document.importNode(this.templateElement.content, true);
+        this.element = templateElementClone.firstElementChild as HTMLOptionElement;
+        this.element.id = type + '-projects';
+        this.headerElement = this.element.querySelector('h2') as HTMLElement; 
+        this.defineType(this.type);
+        this.attach();
+    }
+
+    private attach(){
+        this.targetElement.insertAdjacentElement('beforeend', this.element )
+    }
+
+    private defineType(type: string){
+        this.headerElement.innerHTML = type.toUpperCase() + " PROJECTS";
+    }
 }
 
-const showProjectTemplate = () => {    
-    const projectListElement = document.getElementById("project-list")! as HTMLTemplateElement;
-    const projectListClone: Node = projectListElement.content.cloneNode(true);  
-    const appElement: Element = document.querySelector('.app')!;          
-    appElement.appendChild(projectListClone);
-    document.querySelector('h2')!.textContent = 'PROJECTS';
-}
+//END PROJECT-TEMPLATE CLASS
 
-const clearForm = (titleEl: HTMLInputElement, descriptionEl: HTMLInputElement, peopleEl: HTMLInputElement) => {
-    titleEl.value = '';
-    descriptionEl.value = '';
-    peopleEl.value ='';
-}
-
-const showProject = (project: Project) => {
-    const ul = document.querySelector('ul')!;
-    const projectSingleElement = document.getElementById("single-project")! as HTMLTemplateElement;
-    const projectSingleClone: Node = projectSingleElement.content.cloneNode(true);
-    ul.appendChild(projectSingleClone);
-    const arrOfLiElements = document.querySelectorAll("li");
-    arrOfLiElements[arrOfLiElements.length-1].textContent= 
-    `title: ${project.title} description: ${project.description} people: ${project.people}`;
-}
-
-const showListOfProject = (project: Project) => {
-    arrOfProject.push(project);
-    arrOfProject.length <= 1 && showProjectTemplate();
-    showProject(project);     
-}
+const projInput = new ProjectInput();
+const projectOutputActive = new ProjectTemplate('active');
+const projectOutputFinished = new ProjectTemplate('finished');
 
 
