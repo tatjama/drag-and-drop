@@ -87,6 +87,37 @@ abstract class Component<T extends HTMLElement, U extends HTMLElement>{
 }
 //END COMPONENT BASE CLASS
 
+class ProjectItem extends Component <HTMLUListElement, HTMLLIElement>{
+    project: Project;
+
+    get peoples(){
+        if(this.project.people === 1){
+            return `${this.project.people} people assigned`
+        }
+        return `${this.project.people} peoples assigned`
+    }
+
+    constructor(hostId: string, project: Project){
+        super("single-project", hostId, false, project.id)
+        this.project = project;
+        this.renderContent()
+    }
+
+    configure(){}
+
+    renderContent(){
+        const h2 = document.createElement('h2');
+        h2.innerText = `Title: ${this.project.title}`;        
+        const h3 = document.createElement('h3');
+        h3.innerText = this.peoples; 
+        const p = document.createElement('p');
+        p.innerText = `Description: ${this.project.description}`;
+        this.element.appendChild(h2);
+        this.element.appendChild(h3);
+        this.element.appendChild(p);
+    }
+}
+
 //START SHOW LIST OF PROJECTS CLASS
 
 class ProjectList extends Component <HTMLDivElement, HTMLElement> {    
@@ -122,12 +153,9 @@ class ProjectList extends Component <HTMLDivElement, HTMLElement> {
 
     private renderProjects() {
       const listEl = document.getElementById(`${this.type}-projects-list`)! as HTMLUListElement;
-      //console.log(listEl);
       listEl.innerHTML = '';
       for (const prjItem of this.assignedProjects) {
-        const listItem = document.createElement('li');
-        listItem.textContent = prjItem.title;
-        listEl.appendChild(listItem)
+          new ProjectItem(this.element.querySelector('ul')!.id, prjItem);
       }
     }
   
