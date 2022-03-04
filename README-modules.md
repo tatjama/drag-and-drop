@@ -1,6 +1,6 @@
 # Drag & Drop APP create in Typescript and separate with ES MODULES
 
-# Instructions for name-space branch:
+# Instructions:
 1. Export all functions from files
 3. Import all files  with command - import { var } from 'file.js';
 4. At tsconfig.json allow option 
