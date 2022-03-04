@@ -358,62 +358,9 @@ class ProjectItem extends Component <HTMLUListElement, HTMLLIElement> implements
     }
 }
 
-//START PROJECT-TEMPLATE CLASS
-class ProjectTemplate{
-    type: string;
-    templateElement: HTMLTemplateElement;
-    targetElement: HTMLDivElement;
-    element: HTMLOptionElement;
-    headerElement: HTMLElement;   
 
-    constructor(type: string){
-        this.type = type;
-        this.templateElement = document.getElementById("project-list") as HTMLTemplateElement;
-        this.targetElement = document.getElementById('app') as HTMLDivElement;        
-        const templateElementClone: DocumentFragment = document.importNode(this.templateElement.content, true);
-        this.element = templateElementClone.firstElementChild as HTMLOptionElement;
-        this.element.id = type + '-projects';
-        this.headerElement = this.element.querySelector('h2') as HTMLElement; 
-        this.defineType(this.type);
-        this.attach();
-    }
-
-    private attach(){
-        this.targetElement.insertAdjacentElement('beforeend', this.element )
-    }
-
-    private defineType(type: string){
-        this.headerElement.innerHTML = type.toUpperCase() + " PROJECTS";
-    }
-}
-
-//END PROJECT-TEMPLATE CLASS
-
-const projInput = new ProjectInput();
-const projectOutputActive = new ProjectList('active');
-const projectOutputFinished = new ProjectList('finished');
+new ProjectInput();
+new ProjectList('active');
+new ProjectList('finished');
 
 
-/*class Drop{
-    targetElement: HTMLUListElement
-
-    constructor(){
-        this.targetElement = document.querySelector('#finished-projects ul') as HTMLUListElement;
-        this.targetElement.setAttribute('class', 'droppable');
-        this.targetElement.addEventListener('dragover', this.allowDrop);
-        this.targetElement.addEventListener('drop', this.drop);
-    }
-
-    private allowDrop(e: Event){
-        e.preventDefault();
-    }
-
-    private drop(e: any){
-        e.preventDefault();
-        var data = e.dataTransfer.getData("text");
-        e.target.appendChild(document.getElementById(data));
-    }
-}*/
-
-
-//new Drop();
