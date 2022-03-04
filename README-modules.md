@@ -10,3 +10,6 @@
     remove dist file and compile from start
 5. At index.html change  
     <script type="module" src = "dist/app.js" ></script>
+6. Modules Import and export Features:
+    - export Default
+    - import * as SomeName

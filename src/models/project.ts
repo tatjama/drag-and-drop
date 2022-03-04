@@ -1,16 +1,16 @@
-import { Require, AllowedLength, AllowedRange } from '../util/validator.js';
+import * as Validator from '../util/validator.js';
 
 //START PROJECT CLASS
-export enum ProjectStatus  {Active, Finished};
+export enum ProjectStatus  { Active, Finished };
 
 export class Project{
     id: string;
-    @Require
+    @Validator.Require
     public title: string;
-    @Require
-    @AllowedLength
+    @Validator.Require
+    @Validator.AllowedLength
     public description: string;
-    @AllowedRange
+    @Validator.AllowedRange
     public people: number;    
     public status: ProjectStatus
 
