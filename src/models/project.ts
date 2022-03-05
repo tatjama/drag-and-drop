@@ -1,4 +1,4 @@
-import * as Validator from '../util/validator.js';
+import * as Validator from '../util/validator';
 
 //START PROJECT CLASS
 export enum ProjectStatus  { Active, Finished };
